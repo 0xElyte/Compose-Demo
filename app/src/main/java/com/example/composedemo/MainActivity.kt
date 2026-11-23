@@ -27,8 +27,11 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -54,10 +57,13 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 
@@ -78,61 +84,17 @@ class MainActivity : ComponentActivity() {
 fun MyApp() {
     val navController = rememberNavController()
 
-    NavHost(navController, startDestination = "main_selection") {
-        composable("main_selection") {
+    NavHost(navController, startDestination = "main_selection_screen") {
+        composable("main_selection_screen") {
             MainSelectionScreen(navController)
         }
-        composable(ScreenNavigation.route) {
-            MyAppScreenNavigation()
-        }
+
         composable(BottomTabNavigation.route) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text("Bottom Tab Navigation Not Implemented")
-                Button(
-                    onClick = { navController.popBackStack() },
-                    modifier = Modifier.padding(top = 16.dp)
-                ) {
-                    Text("Back")
-                }
-            }
+            BottomTabNavigation(navController)
         }
-    }
-}
 
-@Composable
-fun MainSelectionScreen(navController: NavHostController) {
-    Column(
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxSize().padding(20.dp)
-    ) {
-        NavButton(
-            "Screen Navigation",
-            onClick = {
-                navController.navigate(ScreenNavigation.route)
-            }
-        )
-
-        NavButton(
-            "Bottom Tab Navigation",
-            onClick = {
-                navController.navigate(BottomTabNavigation.route)
-            }
-        )
-    }
-}
-
-// ======================= Screen Navigation =======================
-@Composable
-fun MyAppScreenNavigation() {
-    val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = HomePageApp.route) {
         composable(HomePageApp.route) {
-            HomePageApp(navController)
+            ScreenNavigationApp(navController)
         }
 
         composable(
@@ -162,6 +124,85 @@ fun MyAppScreenNavigation() {
     }
 }
 
+@Composable
+fun MainSelectionScreen(navController: NavHostController) {
+    Column(
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxSize().padding(20.dp)
+    ) {
+        NavButton(
+            "Screen Navigation",
+            onClick = {
+                navController.navigate(HomePageApp.route)
+            }
+        )
+
+        NavButton(
+            "Bottom Tab Navigation",
+            onClick = {
+                navController.navigate(BottomTabNavigation.route)
+            }
+        )
+    }
+}
+
+// ======================= Bottom Tab Navigation =======================
+@Composable
+fun BottomTabNavigation(navController: NavHostController) {
+    val bottomNavController = rememberNavController()
+    val destinationList = listOf<BottomNavItem>(
+        TaskAppBottomNav,
+        ComposeTutorialAppBottomNav,
+        ComposeQuadrantAppBottomNav,
+        LittleLemonAppBottomNav,
+        LoginScreenAppBottomNav
+    )
+
+    Scaffold(
+        bottomBar = {
+            NavigationBar {
+                val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
+                val currentDestination = navBackStackEntry?.destination
+
+                destinationList.forEach { item ->
+                    NavigationBarItem(
+                        selected = currentDestination?.hierarchy?.any { it.route == item.route } == true,
+                        onClick = {
+                            bottomNavController.navigate(item.route) {
+                                popUpTo(bottomNavController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        icon = {
+                            Icon(
+                                imageVector = item.icon,
+                                contentDescription = item.title
+                            )
+                        },
+                        label = { Text(item.title) }
+                    )
+                }
+            }
+        }
+    ) { paddingValues ->
+        NavHost(
+            navController = bottomNavController,
+            startDestination = TaskAppBottomNav.route,
+            modifier = Modifier.padding(paddingValues)
+        ) {
+            composable(TaskApp.route) { TaskApp(null) }
+            composable(ComposeTutorialApp.route) { ComposeTutorialApp() }
+            composable(ComposeQuadrantApp.route) { ComposeQuadrantApp() }
+            composable(LittleLemonApp.route) { LittleLemonApp() }
+            composable(LoginScreenApp.route) { LoginScreenApp() }
+        }
+    }
+}
+
 // HomePage
 @Composable
 fun NavButton(text: String, onClick: () -> Unit) {
@@ -176,7 +217,7 @@ fun NavButton(text: String, onClick: () -> Unit) {
 
 // ======================= HomePage App =======================
 @Composable
-fun HomePageApp(navController: NavHostController) {
+fun ScreenNavigationApp(navController: NavHostController) {
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -267,7 +308,6 @@ fun ComposeTutorialApp() {
         )
 
         ContentText(stringResource(R.string.content_text), Modifier.padding(16.dp))
-
     }
 }
 

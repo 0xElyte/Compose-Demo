@@ -42,6 +42,7 @@ dependencies {
 
     // Jetpack Compose integration
     implementation(libs.androidx.navigation.compose)
+    implementation("androidx.navigation:navigation-compose")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
