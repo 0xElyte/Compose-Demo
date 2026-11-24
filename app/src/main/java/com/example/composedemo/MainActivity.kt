@@ -1,5 +1,6 @@
 package com.example.composedemo
 
+import android.annotation.SuppressLint
 import android.content.res.Configuration.ORIENTATION_LANDSCAPE
 import android.os.Bundle
 import android.widget.Toast
@@ -9,6 +10,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -38,9 +40,11 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -90,7 +94,7 @@ fun MyApp() {
         }
 
         composable(BottomTabNavigation.route) {
-            BottomTabNavigation(navController)
+            BottomTabNavigation()
         }
 
         composable(HomePageApp.route) {
@@ -129,7 +133,9 @@ fun MainSelectionScreen(navController: NavHostController) {
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxSize().padding(20.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(20.dp)
     ) {
         NavButton(
             "Screen Navigation",
@@ -149,9 +155,10 @@ fun MainSelectionScreen(navController: NavHostController) {
 
 // ======================= Bottom Tab Navigation =======================
 @Composable
-fun BottomTabNavigation(navController: NavHostController) {
+fun BottomTabNavigation() {
     val bottomNavController = rememberNavController()
-    val destinationList = listOf<BottomNavItem>(
+
+    val destinationList = listOf(
         TaskAppBottomNav,
         ComposeTutorialAppBottomNav,
         ComposeQuadrantAppBottomNav,
@@ -209,7 +216,9 @@ fun NavButton(text: String, onClick: () -> Unit) {
     Button(
         onClick = onClick,
         shape = RoundedCornerShape(size = 12.dp),
-        modifier = Modifier.width(250.dp).padding(horizontal = 20.dp, vertical = 12.dp)
+        modifier = Modifier
+            .width(250.dp)
+            .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
         Text(text)
     }
@@ -221,7 +230,9 @@ fun ScreenNavigationApp(navController: NavHostController) {
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxSize().padding(20.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(20.dp)
     )
     {
         NavButton(
@@ -317,8 +328,7 @@ fun CheckmarkImage() {
     Image(
         painter = painterResource(R.drawable.ic_task_completed),
         contentDescription = null,
-
-        )
+    )
 }
 
 @Composable
@@ -401,11 +411,22 @@ fun ComposeQuadrantApp() {
 }
 
 // ======================= Little Lemon App =======================
+@SuppressLint("AutoboxingStateCreation")
 @Composable
 fun LittleLemonApp() {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val configuration = LocalConfiguration.current
+
+    val bottomNavController = rememberNavController()
+
+    val bottomTabs = listOf(
+        LittleLemonMenuScreen,
+        LittleLemonHomeScreen,
+        LittleLemonLocationScreen
+    )
+
+    val selectedIndex = rememberSaveable{ mutableIntStateOf(0) }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -421,6 +442,34 @@ fun LittleLemonApp() {
         Scaffold(
             topBar = {
                 TopAppBar(drawerState, scope)
+            },
+
+            bottomBar = {
+                NavigationBar {
+                    for ((index, destination) in bottomTabs.withIndex()) {
+                        NavigationBarItem(
+                            selected = selectedIndex.intValue == index,
+
+                            onClick = {
+                                selectedIndex.intValue = index
+
+                                bottomNavController.navigate(destination.route) {
+                                    popUpTo(LittleLemonHomeScreen.route)
+                                    launchSingleTop = true
+                                }
+                            },
+
+                            icon = {
+                                Icon(
+                                    painter = painterResource(id = destination.icon),
+                                    contentDescription = destination.title
+                                )
+                            },
+
+                            label = { Text(text = destination.title) }
+                        )
+                    }
+                }
             }
         ) { padding ->
             val modifier = Modifier
@@ -428,31 +477,57 @@ fun LittleLemonApp() {
                 .background(color = colorResource(R.color.bg_off_white))
                 .padding(padding)
 
-            if (configuration.orientation == ORIENTATION_LANDSCAPE) {
-                Row(
-                    modifier = modifier,
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    HeroSection(
-                        modifier = Modifier
-                            .weight(0.5f)
-                            .fillMaxHeight()
-                            .verticalScroll(rememberScrollState())
-                    )
-                    LowerPanel(
-                        modifier = Modifier
-                            .weight(0.5f)
-                            .fillMaxHeight()
-                            .verticalScroll(rememberScrollState())
-                    )
-                }
-            } else {
-                Column(
-                    modifier = modifier
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    HeroSection()
-                    LowerPanel()
+            Box(modifier = modifier) {
+                NavHost(navController = bottomNavController, startDestination = LittleLemonHomeScreen.route) {
+                    composable(LittleLemonHomeScreen.route) {
+                        if (configuration.orientation == ORIENTATION_LANDSCAPE) {
+                            Row(
+                                modifier = modifier,
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                HeroSection(
+                                    modifier = Modifier
+                                        .weight(0.5f)
+                                        .fillMaxHeight()
+                                        .verticalScroll(rememberScrollState())
+                                )
+                                LowerPanel(
+                                    modifier = Modifier
+                                        .weight(0.5f)
+                                        .fillMaxHeight()
+                                        .verticalScroll(rememberScrollState())
+                                )
+                            }
+                        } else {
+                            Column(
+                                modifier = modifier
+                                    .verticalScroll(rememberScrollState())
+                            ) {
+                                HeroSection()
+                                LowerPanel()
+                            }
+                        }
+                    }
+
+                    composable(LittleLemonMenuScreen.route) {
+                        Column(
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Text("Menu Screen", fontSize = 24.sp)
+                        }
+                    }
+
+                    composable(LittleLemonLocationScreen.route) {
+                        Column(
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Text("Location Screen", fontSize = 24.sp)
+                        }
+                    }
                 }
             }
         }
@@ -536,7 +611,9 @@ fun HeroSection(modifier: Modifier = Modifier) {
 
 @Composable
 fun LowerPanel(modifier: Modifier = Modifier) {
-    Column(modifier = modifier.background(color = colorResource(R.color.white)).padding(8.dp)) {
+    Column(modifier = modifier
+        .background(color = colorResource(R.color.white))
+        .padding(8.dp)) {
         WeeklySpecialCard()
         Spacer(Modifier.height(8.dp))
         MenuDish()
@@ -584,7 +661,7 @@ fun MenuDish(modifier: Modifier = Modifier) {
                     )
 
                     Text(
-                        text = "The famous greek salad of " +
+                        text = "The famous Greek salad of " +
                                 "crispy lettuce, peppers, olives, " +
                                 "our Chicago ...",
                         color = Color.Gray,

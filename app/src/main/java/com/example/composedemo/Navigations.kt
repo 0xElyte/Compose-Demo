@@ -76,3 +76,31 @@ object LoginScreenAppBottomNav : BottomNavItem {
     override val icon = Icons.Default.Settings
     override val route = LoginScreenApp.route
 }
+
+// Little Lemon Tabbed Navigation
+interface LittleLemonTabDestinations {
+    val route: String
+    val icon: Int
+    val title: String
+}
+
+
+object LittleLemonMenuScreen : LittleLemonTabDestinations {
+    override val route = "Menu"
+    override val icon = R.drawable.ic_menu
+    override val title = "Menu"
+}
+
+
+object LittleLemonHomeScreen : LittleLemonTabDestinations {
+    override val route = "Home"
+    override val icon = R.drawable.ic_home
+    override val title = "Home"
+}
+
+
+object LittleLemonLocationScreen : LittleLemonTabDestinations {
+    override val route = "Location"
+    override val icon = R.drawable.ic_location
+    override val title = "Location"
+}
